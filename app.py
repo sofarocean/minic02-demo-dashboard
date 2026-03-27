@@ -3,20 +3,26 @@ import requests
 import folium
 import pandas as pd
 import struct
+import os
 from folium.plugins import MarkerCluster
 from datetime import datetime, timezone, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # MiniCO2 unpacking schema
 # Based on the reference decoder struct:
 #   uint16_t sample_count
-#   float co2_min
-#   float co2_mean
-#   float co2_max
+#   double co2_min
+#   double co2_max
+#   double co2_mean
+#   double co2_stdev
 MINI_CO2_STRUCT = [
     ('uint16_t', 'sample_count'),
-    ('float', 'co2_min'),
-    ('float', 'co2_mean'),
-    ('float', 'co2_max'),
+    ('double', 'co2_min'),
+    ('double', 'co2_max'),
+    ('double', 'co2_mean'),
+    ('double', 'stdev'),
 ]
 
 
@@ -33,7 +39,7 @@ def hex_to_struct(hex_data, struct_description):
     byte_data = bytes.fromhex(hex_data.strip())
     fmt = '<'
     for dt, _ in struct_description:
-        fmt += {'uint32_t': 'I', 'uint16_t': 'H', 'float': 'f', 'char': 'c'}[dt]
+        fmt += {'uint32_t': 'I', 'uint16_t': 'H', 'float': 'f', 'double': 'd', 'char': 'c'}[dt]
     size = struct.calcsize(fmt)
     if len(byte_data) != size:
         return None
@@ -47,10 +53,10 @@ st.set_page_config(layout="wide")
 # Streamlit UI
 st.title("Bristlemouth MiniCO2 Sensor Dashboard")
 
-default_start = (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
+default_start = os.getenv('DEFAULT_START_DATE') or (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
 
-spotter_id = st.text_input("Spotter ID", "SPOT-32255C")
-api_token = st.text_input("API Token", "YOUR_SPOTTER_API_TOKEN")
+spotter_id = st.text_input("Spotter ID", os.getenv('DEFAULT_SPOTTER_ID', "SPOT-31299C"))
+api_token = st.text_input("API Token", os.getenv('DEFAULT_API_TOKEN', "YOUR_SPOTTER_API_TOKEN"))
 start_date = st.text_input("Start Date (ISO)", default_start)
 
 # Option to show results in local browser time
@@ -99,6 +105,12 @@ if 'readings' in st.session_state:
                 location=[d['latitude'], d['longitude']],
                 popup=f"CO2: {d['co2_mean']:.1f} ppm @ {d['time']}",
             ).add_to(cluster)
+        
+        # Fit map to show all markers
+        if readings:
+            locations = [[d['latitude'], d['longitude']] for d in readings]
+            m.fit_bounds(locations)
+        
         st.components.v1.html(m._repr_html_(), height=500)
 
     with col2:

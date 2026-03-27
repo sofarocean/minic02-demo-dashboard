@@ -3,3 +3,4 @@ folium>=0.15
 requests>=2.31
 bitstring>=4.1
 pytz>=2024.1
+python-dotenv
