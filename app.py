@@ -57,7 +57,11 @@ st.title("Bristlemouth MiniCO2 Sensor Dashboard")
 spotter_id = st.secrets["SPOTTER_ID"]
 api_token = st.secrets["API_TOKEN"]
 
-default_start = os.getenv('DEFAULT_START_DATE') or (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
+default_start = (
+    os.getenv('DEFAULT_START_DATE') 
+    or st.secrets.get('DEFAULT_START_DATE') 
+    or (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
+)
 start_date = st.text_input("Start Date (ISO)", default_start)
 
 # Option to show results in local browser time
