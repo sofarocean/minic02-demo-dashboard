@@ -53,10 +53,11 @@ st.set_page_config(layout="wide")
 # Streamlit UI
 st.title("Bristlemouth MiniCO2 Sensor Dashboard")
 
-default_start = os.getenv('DEFAULT_START_DATE') or (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
+# Load credentials from secrets
+spotter_id = st.secrets["SPOTTER_ID"]
+api_token = st.secrets["API_TOKEN"]
 
-spotter_id = st.text_input("Spotter ID", os.getenv('DEFAULT_SPOTTER_ID', "SPOT-31299C"))
-api_token = st.text_input("API Token", os.getenv('DEFAULT_API_TOKEN', "YOUR_SPOTTER_API_TOKEN"))
+default_start = os.getenv('DEFAULT_START_DATE') or (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
 start_date = st.text_input("Start Date (ISO)", default_start)
 
 # Option to show results in local browser time

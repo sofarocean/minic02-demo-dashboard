@@ -18,6 +18,15 @@ Activate it (macOS/Linux):
 
     pip install -r requirements.txt
 
+### Secrets Configuration
+
+Create `.streamlit/secrets.toml` with your credentials:
+
+```toml
+SPOTTER_ID = "SPOT-31299C"
+API_TOKEN = "your_api_token_here"
+```
+
 ### Environment Configuration (Optional)
 
 To pre-fill the dashboard form fields during development, copy the example environment file:
@@ -27,8 +36,6 @@ To pre-fill the dashboard form fields during development, copy the example envir
 Then edit `.env` with your preferred defaults:
 
 ```bash
-DEFAULT_SPOTTER_ID=SPOT-31299C
-DEFAULT_API_TOKEN=your_api_token_here
 DEFAULT_START_DATE=2025-01-01T00:00Z
 ```
 
