@@ -16,7 +16,6 @@ Dependencies:
 """
 
 
-from bitstring import BitStream
 import struct
 
 # Test sensor-data payloads in hex format.
@@ -130,7 +129,7 @@ if __name__ == '__main__':
         sample = hex_to_struct(byte_data, detect_struct_description)
 
         # Print the unpacked sample data.
-        print(f"- miniCO2 Aggregated Data:")
+        print("- miniCO2 Aggregated Data:")
         print(f"\tsample_count: {sample['sample_count']}")
         print(f"\tmin: {sample['min']:.2f} ppmv")
         print(f"\tmax: {sample['max']:.2f} ppmv")

@@ -1,12 +1,13 @@
-import streamlit as st
-import requests
+import os
+import struct
+from datetime import UTC, datetime
+
 import folium
 import pandas as pd
-import struct
-import os
-from folium.plugins import MarkerCluster
-from datetime import datetime, timezone, timedelta
+import requests
+import streamlit as st
 from dotenv import load_dotenv
+from folium.plugins import MarkerCluster
 
 load_dotenv()
 
@@ -27,11 +28,11 @@ MINI_CO2_STRUCT = [
 
 
 def format_timestamp(ts, to_local=False):
-    dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+    dt = datetime.fromisoformat(ts)
     if to_local:
         return dt.astimezone().strftime('%Y-%m-%d %H:%M %Z')
     else:
-        return dt.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+        return dt.astimezone(UTC).strftime('%Y-%m-%d %H:%M UTC')
 
 
 # Decoder
@@ -48,27 +49,38 @@ def hex_to_struct(hex_data, struct_description):
             for (_, name), val in zip(struct_description, values)}
 
 
-st.set_page_config(layout="wide")
+st.set_page_config(page_title="Smart Mooring CO2 Sensor Dashboard", layout="wide")
 
 # Streamlit UI
-st.title("Bristlemouth MiniCO2 Sensor Dashboard")
+st.title("Smart Mooring CO2 Sensor Dashboard")
 
 # Load credentials from secrets
 spotter_id = st.secrets["SPOTTER_ID"]
 api_token = st.secrets["API_TOKEN"]
 
 default_start = (
-    os.getenv('DEFAULT_START_DATE') 
-    or st.secrets.get('DEFAULT_START_DATE') 
-    or (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%MZ')
+    os.getenv('DEFAULT_START_DATE')
+    or st.secrets.get('DEFAULT_START_DATE')
+    or '2026-08-05T00:00Z'
+)
+default_end = (
+    os.getenv('DEFAULT_END_DATE')
+    or st.secrets.get('DEFAULT_END_DATE')
+    or '2026-08-12T00:00Z'
 )
 start_date = st.text_input("Start Date (ISO)", default_start)
+end_date = st.text_input("End Date (ISO)", default_end)
 
 # Option to show results in local browser time
 local_time = st.checkbox("Show timestamps in local browser time", value=True)
 
-if st.button("Fetch & Decode Data"):
+# Fetch on button click, and once automatically on initial page load.
+# The button must be evaluated first so it is always rendered.
+if st.button("Fetch & Decode Data") or not st.session_state.get('initial_fetch_done'):
+    st.session_state['initial_fetch_done'] = True
     url = f"https://api.sofarocean.com/api/sensor-data?token={api_token}&spotterId={spotter_id}&startDate={start_date}"
+    if end_date:
+        url += f"&endDate={end_date}"
     r = requests.get(url)
     if not r.ok:
         st.error("Failed to fetch data.")
@@ -77,8 +89,11 @@ if st.button("Fetch & Decode Data"):
     else:
         readings = []
         for point in r.json().get('data', []):
+            # Other sensors on the mooring report numeric values; only hex payloads are MiniCO2
+            if not isinstance(point.get('value'), str):
+                continue
             try:
-                ts_raw = datetime.fromisoformat(point['timestamp'].replace('Z', '+00:00'))
+                ts_raw = datetime.fromisoformat(point['timestamp'])
                 decoded = hex_to_struct(point['value'], MINI_CO2_STRUCT)
                 
                 if decoded:
@@ -89,7 +104,7 @@ if st.button("Fetch & Decode Data"):
                         'longitude': point['longitude']
                     })
                     readings.append(decoded)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - skip any malformed point
                 print(e)
                 continue
         st.session_state['readings'] = readings
@@ -116,7 +131,7 @@ if 'readings' in st.session_state:
             locations = [[d['latitude'], d['longitude']] for d in readings]
             m.fit_bounds(locations)
         
-        st.components.v1.html(m._repr_html_(), height=500)
+        st.iframe(m._repr_html_(), height=500)
 
     with col2:
         st.write("### CO2 Levels Over Time")
