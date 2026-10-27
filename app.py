@@ -1,12 +1,13 @@
-import streamlit as st
-import requests
+import os
+import struct
+from datetime import UTC, datetime
+
 import folium
 import pandas as pd
-import struct
-import os
-from folium.plugins import MarkerCluster
-from datetime import datetime, timezone
+import requests
+import streamlit as st
 from dotenv import load_dotenv
+from folium.plugins import MarkerCluster
 
 load_dotenv()
 
@@ -27,11 +28,11 @@ MINI_CO2_STRUCT = [
 
 
 def format_timestamp(ts, to_local=False):
-    dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+    dt = datetime.fromisoformat(ts)
     if to_local:
         return dt.astimezone().strftime('%Y-%m-%d %H:%M %Z')
     else:
-        return dt.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+        return dt.astimezone(UTC).strftime('%Y-%m-%d %H:%M UTC')
 
 
 # Decoder
@@ -92,7 +93,7 @@ if st.button("Fetch & Decode Data") or not st.session_state.get('initial_fetch_d
             if not isinstance(point.get('value'), str):
                 continue
             try:
-                ts_raw = datetime.fromisoformat(point['timestamp'].replace('Z', '+00:00'))
+                ts_raw = datetime.fromisoformat(point['timestamp'])
                 decoded = hex_to_struct(point['value'], MINI_CO2_STRUCT)
                 
                 if decoded:
@@ -103,7 +104,7 @@ if st.button("Fetch & Decode Data") or not st.session_state.get('initial_fetch_d
                         'longitude': point['longitude']
                     })
                     readings.append(decoded)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - skip any malformed point
                 print(e)
                 continue
         st.session_state['readings'] = readings
