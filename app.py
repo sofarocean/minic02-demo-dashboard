@@ -131,7 +131,7 @@ if 'readings' in st.session_state:
             locations = [[d['latitude'], d['longitude']] for d in readings]
             m.fit_bounds(locations)
         
-        st.components.v1.html(m._repr_html_(), height=500)
+        st.iframe(m._repr_html_(), height=500)
 
     with col2:
         st.write("### CO2 Levels Over Time")
