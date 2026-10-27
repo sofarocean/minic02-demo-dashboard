@@ -36,7 +36,8 @@ To pre-fill the dashboard form fields during development, copy the example envir
 Then edit `.env` with your preferred defaults:
 
 ```bash
-DEFAULT_START_DATE=2025-01-01T00:00Z
+DEFAULT_START_DATE=2026-08-05T00:00Z
+DEFAULT_END_DATE=2026-08-12T00:00Z
 ```
 
 ### Deactivate the Virtual Environment
